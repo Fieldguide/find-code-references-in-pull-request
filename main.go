@@ -11,6 +11,8 @@ import (
 
 	"github.com/pkg/errors"
 
+	ldapi "github.com/launchdarkly/api-client-go/v15"
+
 	"github.com/google/go-github/v68/github"
 	ghc "github.com/launchdarkly/find-code-references-in-pull-request/comments"
 	lcr "github.com/launchdarkly/find-code-references-in-pull-request/config"
@@ -38,11 +40,20 @@ func main() {
 		failExit(err)
 	}
 
-	flags, err := ldclient.GetAllFlags(config)
+	var flags []ldapi.FeatureFlag
+	if config.Offline {
+		flags, err = readOfflineFlags(config.FlagKeysFile)
+	} else {
+		flags, err = ldclient.GetAllFlags(config)
+	}
 	failExit(err)
 
 	if len(flags) == 0 {
-		gha.SetNotice("No flags found in project %s", config.LdProject)
+		if config.Offline {
+			gha.SetNotice("No flag keys found in %s", config.FlagKeysFile)
+		} else {
+			gha.SetNotice("No flags found in project %s", config.LdProject)
+		}
 		os.Exit(0)
 	}
 
@@ -269,4 +280,32 @@ func failExit(err error) {
 		gha.SetError("%s", err.Error())
 		os.Exit(1)
 	}
+}
+
+// readOfflineFlags builds the flag list from a newline-delimited keys file
+// instead of the LaunchDarkly API. Blank lines and lines beginning with `#`
+// are ignored. Only the flag key is populated; no flag metadata is available
+// offline, so comments render the key without a LaunchDarkly link.
+func readOfflineFlags(path string) ([]ldapi.FeatureFlag, error) {
+	contents, err := os.ReadFile(path)
+	if err != nil {
+		return nil, errors.Wrapf(err, "error reading flag keys file at %q", path)
+	}
+
+	seen := make(map[string]struct{})
+	flags := make([]ldapi.FeatureFlag, 0)
+	for _, line := range strings.Split(string(contents), "\n") {
+		key := strings.TrimSpace(line)
+		if key == "" || strings.HasPrefix(key, "#") {
+			continue
+		}
+		if _, ok := seen[key]; ok {
+			continue
+		}
+		seen[key] = struct{}{}
+		flags = append(flags, ldapi.FeatureFlag{Key: key})
+	}
+
+	gha.Debug("Loaded %d flag keys from %s", len(flags), path)
+	return flags, nil
 }
