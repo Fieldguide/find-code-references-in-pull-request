@@ -58,6 +58,15 @@ may be provided.`,
 		usage:        "Enables verbose debug logging",
 	},
 	{
+		name:         "flagKeysFile",
+		short:        "F",
+		defaultValue: "",
+		usage: `Path to a file containing feature flag keys, one per line. When provided,
+the tool runs in offline mode: no LaunchDarkly API calls are made, and
+accessToken, projKey, and repoName are not required. Results are output
+to the console (or to a CSV if outDir is set).`,
+	},
+	{
 		name:         "defaultBranch",
 		short:        "B",
 		defaultValue: "main",

@@ -1,7 +1,10 @@
 package flags
 
 import (
+	"bufio"
 	"fmt"
+	"os"
+	"strings"
 
 	"github.com/launchdarkly/ld-find-code-refs/v2/internal/helpers"
 	"github.com/launchdarkly/ld-find-code-refs/v2/internal/ld"
@@ -11,9 +14,17 @@ import (
 
 const (
 	minFlagKeyLen = 3 // Minimum flag key length helps reduce the number of false positives
+
+	// offlineProjectKey is used as the project key when running in offline mode
+	// since no real LaunchDarkly project is involved.
+	offlineProjectKey = "offline"
 )
 
 func GetFlagKeys(opts options.Options, repoParams ld.RepoParams) map[string][]string {
+	if opts.IsOffline() {
+		return getFlagKeysFromFile(opts.FlagKeysFile)
+	}
+
 	isDryRun := opts.DryRun
 	ldApi := ld.InitApiClient(ld.ApiOptions{ApiKey: opts.AccessToken, BaseUri: opts.BaseUri, UserAgent: helpers.GetUserAgent(opts.UserAgent)})
 	ignoreServiceErrors := opts.IgnoreServiceErrors
@@ -33,6 +44,36 @@ func GetFlagKeys(opts options.Options, repoParams ld.RepoParams) map[string][]st
 		}
 		addFlagKeys(flagKeys, flags, proj.Key)
 	}
+	return flagKeys
+}
+
+func getFlagKeysFromFile(path string) map[string][]string {
+	file, err := os.Open(path)
+	if err != nil {
+		log.Error.Fatalf("unable to open flag keys file: %s", err)
+	}
+	defer file.Close()
+
+	var keys []string
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		key := strings.TrimSpace(scanner.Text())
+		if key != "" && !strings.HasPrefix(key, "#") {
+			keys = append(keys, key)
+		}
+	}
+	if err := scanner.Err(); err != nil {
+		log.Error.Fatalf("error reading flag keys file: %s", err)
+	}
+
+	if len(keys) == 0 {
+		log.Error.Fatalf("no flag keys found in file: %s", path)
+	}
+
+	log.Info.Printf("read %d flag keys from file: %s", len(keys), path)
+
+	flagKeys := make(map[string][]string)
+	addFlagKeys(flagKeys, keys, offlineProjectKey)
 	return flagKeys
 }
 

@@ -239,6 +239,9 @@ func getOptions(config *lcr.Config) (options.Options, error) {
 	// Needed for ld-find-code-refs to work as a library
 	viper.Set("dir", config.Workspace)
 	viper.Set("accessToken", config.ApiToken)
+	// Offline mode relaxes the accessToken precondition; without this,
+	// InitYAML fails and coderefs.yaml (aliases) is never loaded
+	viper.Set("flagKeysFile", config.FlagKeysFile)
 
 	if err := options.InitYAML(); err != nil {
 		gha.LogError(err)

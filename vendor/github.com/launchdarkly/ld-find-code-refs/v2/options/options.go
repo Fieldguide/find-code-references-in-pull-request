@@ -68,6 +68,7 @@ type Options struct {
 	IgnoreServiceErrors bool   `mapstructure:"ignoreServiceErrors"`
 	Prune               bool   `mapstructure:"prune"`
 	SkipArchivedFlags   bool   `mapstructure:"skipArchivedFlags"`
+	FlagKeysFile        string `mapstructure:"flagKeysFile"`
 
 	// The following options can only be configured via YAML configuration
 
@@ -125,6 +126,16 @@ func InitYAML() error {
 
 // validatePreconditions ensures required flags have been set
 func validateYAMLPreconditions() error {
+	flagKeysFile := viper.GetString("flagKeysFile")
+	if flagKeysFile != "" {
+		// In offline mode, only dir is required for YAML preconditions
+		dir := viper.GetString("dir")
+		if dir == "" {
+			return fmt.Errorf("missing required option(s): [dir]")
+		}
+		return nil
+	}
+
 	token := viper.GetString("accessToken")
 	dir := viper.GetString("dir")
 	missingRequiredOptions := []string{}
@@ -177,7 +188,18 @@ func GetWrapperOptions(dir string, merge func(Options) (Options, error)) (Option
 	return merge(opts)
 }
 
+func (o Options) IsOffline() bool {
+	return o.FlagKeysFile != ""
+}
+
 func (o Options) ValidateRequired() error {
+	if o.IsOffline() {
+		if o.Dir == "" {
+			return fmt.Errorf("missing required option(s): [dir]")
+		}
+		return nil
+	}
+
 	missingRequiredOptions := []string{}
 	if o.AccessToken == "" {
 		missingRequiredOptions = append(missingRequiredOptions, "accessToken")
@@ -223,19 +245,27 @@ func (o Options) Validate() error {
 		return err
 	}
 
+	if o.IsOffline() {
+		if _, err := os.Stat(o.FlagKeysFile); err != nil {
+			return fmt.Errorf(`invalid value for "flagKeysFile": %w`, err)
+		}
+	}
+
 	maxContextLines := 5
 	if o.ContextLines > maxContextLines {
 		return fmt.Errorf(`invalid value %q for "contextLines": must be <= %d`, o.ContextLines, maxContextLines)
 	}
 
-	repoType := RepoType(strings.ToLower(o.RepoType))
-	if err := repoType.isValid(); err != nil {
-		return err
-	}
+	if !o.IsOffline() {
+		repoType := RepoType(strings.ToLower(o.RepoType))
+		if err := repoType.isValid(); err != nil {
+			return err
+		}
 
-	if o.RepoUrl != "" {
-		if _, err := url.ParseRequestURI(o.RepoUrl); err != nil {
-			return fmt.Errorf(`invalid value %q for "repoUrl": %+v`, o.RepoUrl, err)
+		if o.RepoUrl != "" {
+			if _, err := url.ParseRequestURI(o.RepoUrl); err != nil {
+				return fmt.Errorf(`invalid value %q for "repoUrl": %+v`, o.RepoUrl, err)
+			}
 		}
 	}
 

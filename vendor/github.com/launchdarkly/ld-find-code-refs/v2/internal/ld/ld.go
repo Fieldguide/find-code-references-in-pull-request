@@ -485,6 +485,8 @@ func (c ApiClient) do(req *h.Request) (*http.Response, error) {
 		return nil, err
 	}
 
+	log.Debug.Printf("response status %d %s for %s %s", res.StatusCode, http.StatusText(res.StatusCode), req.Method, req.URL)
+
 	// Check for all general status codes returned by the code references API, attempting to deconstruct LD error messages, if possible.
 	switch res.StatusCode {
 	case http.StatusOK, http.StatusCreated, http.StatusNoContent:
@@ -709,6 +711,31 @@ func (b BranchRep) CountByProjectAndFlag(matcher [][]string, projects []string) 
 		}
 	}
 	return refCountByFlag
+}
+
+func (b BranchRep) WriteCountsToJSON(outDir, projKey, repo, sha string) (string, error) {
+	var tag string
+	if len(sha) >= shortShaLength {
+		tag = sha[:shortShaLength]
+	} else {
+		tag = b.Name
+	}
+
+	absPath, err := validation.NormalizeAndValidatePath(outDir)
+	if err != nil {
+		return "", fmt.Errorf("invalid outDir '%s': %w", outDir, err)
+	}
+	path := filepath.Join(absPath, fmt.Sprintf("coderefs_%s_%s_%s.json", projKey, repo, tag))
+
+	data, err := json.Marshal(b.CountAll())
+	if err != nil {
+		return "", err
+	}
+
+	if err := os.WriteFile(path, data, 0644); err != nil {
+		return "", err
+	}
+	return path, nil
 }
 
 func (b BranchRep) PrintReferenceCountTable() {
