@@ -25,6 +25,7 @@ type Config struct {
 	GHClient             *github.Client
 	MaxFlags             int
 	PlaceholderComment   bool
+	SkipComment          bool
 	IncludeArchivedFlags bool
 	CheckExtinctions     bool
 	CreateFlagLinks      bool
@@ -93,6 +94,11 @@ func ValidateInputandParse(ctx context.Context) (*Config, error) {
 	if placholderComment, err := strconv.ParseBool(os.Getenv("INPUT_PLACEHOLDER-COMMENT")); err == nil {
 		// ignore error - default is false
 		config.PlaceholderComment = placholderComment
+	}
+
+	if skipComment, err := strconv.ParseBool(os.Getenv("INPUT_SKIP-COMMENT")); err == nil {
+		// ignore error - default is false
+		config.SkipComment = skipComment
 	}
 
 	if includeArchivedFlags, err := strconv.ParseBool(os.Getenv("INPUT_INCLUDE-ARCHIVED-FLAGS")); err == nil {

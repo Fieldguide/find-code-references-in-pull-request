@@ -96,6 +96,11 @@ func main() {
 	// Set outputs
 	setOutputs(config, flagsRef)
 
+	if config.SkipComment {
+		gha.Log("Skipping PR comment (`skip-comment` is true)")
+		return
+	}
+
 	// Add comment
 	gha.StartLogGroup("Processing comment...")
 	existingComment := checkExistingComments(event, config, ctx)
