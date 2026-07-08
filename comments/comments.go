@@ -37,6 +37,7 @@ type Comment struct {
 	Primary            ldapi.FeatureFlagConfig
 	LDInstance         string
 	ExtinctionsEnabled bool
+	Offline            bool
 }
 
 func isNil(a interface{}) bool {
@@ -58,6 +59,11 @@ func githubFlagComment(flag ldapi.FeatureFlag, aliases []string, added, extinct 
 		Primary:            flag.Environments[config.LdEnvironment],
 		LDInstance:         config.LdInstance,
 		ExtinctionsEnabled: config.CheckExtinctions,
+		Offline:            config.Offline,
+	}
+	// Offline has no flag metadata or LaunchDarkly link; show the key as the name.
+	if config.Offline {
+		commentTemplate.FlagName = flag.Key
 	}
 	if flag.ArchivedDate != nil {
 		commentTemplate.ArchivedAt = time.UnixMilli(*flag.ArchivedDate)
@@ -67,7 +73,7 @@ func githubFlagComment(flag ldapi.FeatureFlag, aliases []string, added, extinct 
 	}
 
 	// All whitespace for template is required to be there or it will not render properly nested.
-	tmplSetup := `| [{{.FlagName}}]({{.LDInstance}}{{.Primary.Site.Href}}) | ` +
+	tmplSetup := `| {{if .Offline}}{{.FlagName}}{{else}}[{{.FlagName}}]({{.LDInstance}}{{.Primary.Site.Href}}){{end}} | ` +
 		"`" + `{{.FlagKey}}` + "` |" +
 		`{{- if ne (len .Aliases) 0}}` +
 		`{{range $i, $e := .Aliases }}` + `{{if $i}},{{end}}` + " `" + `{{$e}}` + "`" + `{{end}}` +

@@ -4,7 +4,7 @@ LABEL com.github.actions.description="Flags"
 LABEL homepage="https://www.launchdarkly.com"
 
 RUN apk update
-RUN apk add --no-cache git
+RUN apk add --no-cache git bash
 
 RUN mkdir /app
 WORKDIR /app

@@ -28,6 +28,8 @@ type Config struct {
 	IncludeArchivedFlags bool
 	CheckExtinctions     bool
 	CreateFlagLinks      bool
+	Offline              bool
+	FlagKeysFile         string
 }
 
 func ValidateInputandParse(ctx context.Context) (*Config, error) {
@@ -46,12 +48,22 @@ func ValidateInputandParse(ctx context.Context) (*Config, error) {
 		CheckExtinctions:     true,
 	}
 
+	// Offline mode: when a flag keys file is supplied, the action reads flag keys
+	// from disk instead of the LaunchDarkly API, so no access token is required.
+	config.FlagKeysFile = os.Getenv("INPUT_FLAG-KEYS-FILE")
+	config.Offline = config.FlagKeysFile != ""
+
 	config.LdProject = os.Getenv("INPUT_PROJECT-KEY")
 	if config.LdProject == "" {
-		return nil, errors.New("`project-key` is required")
+		if !config.Offline {
+			return nil, errors.New("`project-key` is required")
+		}
+		config.LdProject = "offline"
 	}
 	if envKey := os.Getenv("INPUT_ENVIRONMENT-KEY"); len(envKey) == 0 {
-		return nil, errors.New("`environment-key` is required")
+		if !config.Offline {
+			return nil, errors.New("`environment-key` is required")
+		}
 	} else if strings.Contains(envKey, ",") {
 		return nil, errors.New("only one `environment-key` is allowed")
 	} else {
@@ -66,7 +78,7 @@ func ValidateInputandParse(ctx context.Context) (*Config, error) {
 	config.Repo = strings.Split(os.Getenv("GITHUB_REPOSITORY"), "/")[1]
 
 	config.ApiToken = os.Getenv("INPUT_ACCESS-TOKEN")
-	if config.ApiToken == "" {
+	if config.ApiToken == "" && !config.Offline {
 		return nil, errors.New("`access-token` is required")
 	}
 
@@ -96,6 +108,10 @@ func ValidateInputandParse(ctx context.Context) (*Config, error) {
 	if createFlagLinks, err := strconv.ParseBool(os.Getenv("INPUT_CREATE-FLAG-LINKS")); err == nil {
 		// ignore error - default is false
 		config.CreateFlagLinks = createFlagLinks
+	}
+	if config.Offline {
+		// Flag links require the LaunchDarkly API; never create them offline.
+		config.CreateFlagLinks = false
 	}
 
 	client, err := getGithubClient(ctx)

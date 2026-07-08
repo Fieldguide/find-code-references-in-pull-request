@@ -15,8 +15,11 @@ inputs:
       description: 'Token to use to authorize comments on PR. Typically the `GITHUB_TOKEN` secret or equivalent `github.token`.'
       required: true
   access-token:
-    description: LaunchDarkly access token
-    required: true
+    description: LaunchDarkly access token. Not required when `flag-keys-file` is set (offline mode).
+    required: false
+  flag-keys-file:
+    description: 'Path to a newline-delimited file of flag keys to scan for. When set, the action runs offline: flag keys are read from this file instead of the LaunchDarkly API, so no access token or flag links are used.'
+    required: false
   project-key:
     description: LaunchDarkly project key
     required: false
