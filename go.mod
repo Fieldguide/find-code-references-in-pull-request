@@ -79,4 +79,4 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-replace github.com/launchdarkly/ld-find-code-refs/v2 => github.com/Fieldguide/ld-find-code-refs/v2 v2.0.0-20260707190652-74566b11e3a1
+replace github.com/launchdarkly/ld-find-code-refs/v2 => github.com/Fieldguide/ld-find-code-refs/v2 v2.0.0-20260708130945-9b9dc97ea2e4
