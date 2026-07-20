@@ -105,7 +105,7 @@ This action does not support monorepos or searching for flags across LaunchDarkl
 | `project-key` | <p>LaunchDarkly project key</p> | `false` | `default` |
 | `environment-key` | <p>LaunchDarkly environment key for creating flag links</p> | `false` | `production` |
 | `placeholder-comment` | <p>Comment on PR when no flags are found. If flags are found in later commits, this comment will be updated.</p> | `false` | `false` |
-| `skip-comment` | <p>Skip posting or updating the PR comment entirely. Use when another workflow already posts the flag references comment and this run only needs the action outputs.</p> | `false` | `false` |
+| `skip-comment` | <p>Skip posting or updating the PR comment entirely. This also skips flag-link creation, which is tied to comment posting. Use when another workflow already posts the flag references comment and this run only needs the action outputs.</p> | `false` | `false` |
 | `include-archived-flags` | <p>Scan for archived flags</p> | `false` | `true` |
 | `max-flags` | <p>Maximum number of flags to find per PR</p> | `false` | `5` |
 | `base-uri` | <p>The base URI for the LaunchDarkly server. Most members should use the default value.</p> | `false` | `https://app.launchdarkly.com` |

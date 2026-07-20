@@ -33,7 +33,7 @@ inputs:
     required: false
     default: 'false'
   skip-comment:
-    description: Skip posting or updating the PR comment entirely. Use when another workflow already posts the flag references comment and this run only needs the action outputs.
+    description: Skip posting or updating the PR comment entirely. This also skips flag-link creation, which is tied to comment posting. Use when another workflow already posts the flag references comment and this run only needs the action outputs.
     required: false
     default: 'false'
   include-archived-flags:
