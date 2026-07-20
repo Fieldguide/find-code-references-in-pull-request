@@ -32,6 +32,10 @@ inputs:
     description: Comment on PR when no flags are found. If flags are found in later commits, this comment will be updated.
     required: false
     default: 'false'
+  skip-comment:
+    description: Skip posting or updating the PR comment entirely. This also skips flag-link creation, which is tied to comment posting. Use when another workflow already posts the flag references comment and this run only needs the action outputs.
+    required: false
+    default: 'false'
   include-archived-flags:
     description: Scan for archived flags
     required: false

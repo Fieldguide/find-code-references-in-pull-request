@@ -41,7 +41,7 @@ func main() {
 	}
 
 	var flags []ldapi.FeatureFlag
-	if config.Offline {
+	if config.IsOffline() {
 		flags, err = readOfflineFlags(config.FlagKeysFile)
 	} else {
 		flags, err = ldclient.GetAllFlags(config)
@@ -49,7 +49,7 @@ func main() {
 	failExit(err)
 
 	if len(flags) == 0 {
-		if config.Offline {
+		if config.IsOffline() {
 			gha.SetNotice("No flag keys found in %s", config.FlagKeysFile)
 		} else {
 			gha.SetNotice("No flags found in project %s", config.LdProject)
@@ -95,6 +95,11 @@ func main() {
 
 	// Set outputs
 	setOutputs(config, flagsRef)
+
+	if config.SkipComment {
+		gha.Log("Skipping PR comment (`skip-comment` is true)")
+		return
+	}
 
 	// Add comment
 	gha.StartLogGroup("Processing comment...")
@@ -289,7 +294,10 @@ func failExit(err error) {
 // instead of the LaunchDarkly API. Blank lines and lines beginning with `#`
 // are ignored. Only the flag key is populated; no flag metadata is available
 // offline, so comments render the key without a LaunchDarkly link.
+// Keep this format in sync with the fork's parallel getFlagKeysFromFile parser.
 func readOfflineFlags(path string) ([]ldapi.FeatureFlag, error) {
+	const minFlagKeyLen = 3
+
 	contents, err := os.ReadFile(path)
 	if err != nil {
 		return nil, errors.Wrapf(err, "error reading flag keys file at %q", path)
@@ -300,6 +308,10 @@ func readOfflineFlags(path string) ([]ldapi.FeatureFlag, error) {
 	for _, line := range strings.Split(string(contents), "\n") {
 		key := strings.TrimSpace(line)
 		if key == "" || strings.HasPrefix(key, "#") {
+			continue
+		}
+		if len(key) < minFlagKeyLen {
+			gha.SetWarning("Skipping flag key %q: keys must be at least %d characters", key, minFlagKeyLen)
 			continue
 		}
 		if _, ok := seen[key]; ok {

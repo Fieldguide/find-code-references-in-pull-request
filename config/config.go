@@ -25,11 +25,15 @@ type Config struct {
 	GHClient             *github.Client
 	MaxFlags             int
 	PlaceholderComment   bool
+	SkipComment          bool
 	IncludeArchivedFlags bool
 	CheckExtinctions     bool
 	CreateFlagLinks      bool
-	Offline              bool
 	FlagKeysFile         string
+}
+
+func (c *Config) IsOffline() bool {
+	return c.FlagKeysFile != ""
 }
 
 func ValidateInputandParse(ctx context.Context) (*Config, error) {
@@ -51,17 +55,15 @@ func ValidateInputandParse(ctx context.Context) (*Config, error) {
 	// Offline mode: when a flag keys file is supplied, the action reads flag keys
 	// from disk instead of the LaunchDarkly API, so no access token is required.
 	config.FlagKeysFile = os.Getenv("INPUT_FLAG-KEYS-FILE")
-	config.Offline = config.FlagKeysFile != ""
 
 	config.LdProject = os.Getenv("INPUT_PROJECT-KEY")
 	if config.LdProject == "" {
-		if !config.Offline {
+		if !config.IsOffline() {
 			return nil, errors.New("`project-key` is required")
 		}
-		config.LdProject = "offline"
 	}
 	if envKey := os.Getenv("INPUT_ENVIRONMENT-KEY"); len(envKey) == 0 {
-		if !config.Offline {
+		if !config.IsOffline() {
 			return nil, errors.New("`environment-key` is required")
 		}
 	} else if strings.Contains(envKey, ",") {
@@ -78,7 +80,7 @@ func ValidateInputandParse(ctx context.Context) (*Config, error) {
 	config.Repo = strings.Split(os.Getenv("GITHUB_REPOSITORY"), "/")[1]
 
 	config.ApiToken = os.Getenv("INPUT_ACCESS-TOKEN")
-	if config.ApiToken == "" && !config.Offline {
+	if config.ApiToken == "" && !config.IsOffline() {
 		return nil, errors.New("`access-token` is required")
 	}
 
@@ -95,6 +97,11 @@ func ValidateInputandParse(ctx context.Context) (*Config, error) {
 		config.PlaceholderComment = placholderComment
 	}
 
+	if skipComment, err := strconv.ParseBool(os.Getenv("INPUT_SKIP-COMMENT")); err == nil {
+		// ignore error - default is false
+		config.SkipComment = skipComment
+	}
+
 	if includeArchivedFlags, err := strconv.ParseBool(os.Getenv("INPUT_INCLUDE-ARCHIVED-FLAGS")); err == nil {
 		// ignore error - default is true
 		config.IncludeArchivedFlags = includeArchivedFlags
@@ -109,7 +116,7 @@ func ValidateInputandParse(ctx context.Context) (*Config, error) {
 		// ignore error - default is false
 		config.CreateFlagLinks = createFlagLinks
 	}
-	if config.Offline {
+	if config.IsOffline() {
 		// Flag links require the LaunchDarkly API; never create them offline.
 		config.CreateFlagLinks = false
 	}
