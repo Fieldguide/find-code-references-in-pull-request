@@ -12,7 +12,7 @@ import (
 
 func TestOfflineFlagCommentRendersKeyWithoutLink(t *testing.T) {
 	cfg := &config.Config{
-		Offline:       true,
+		FlagKeysFile:  "flag-keys.txt",
 		LdInstance:    "https://app.launchdarkly.com",
 		LdEnvironment: "production",
 	}

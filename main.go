@@ -41,7 +41,7 @@ func main() {
 	}
 
 	var flags []ldapi.FeatureFlag
-	if config.Offline {
+	if config.IsOffline() {
 		flags, err = readOfflineFlags(config.FlagKeysFile)
 	} else {
 		flags, err = ldclient.GetAllFlags(config)
@@ -49,7 +49,7 @@ func main() {
 	failExit(err)
 
 	if len(flags) == 0 {
-		if config.Offline {
+		if config.IsOffline() {
 			gha.SetNotice("No flag keys found in %s", config.FlagKeysFile)
 		} else {
 			gha.SetNotice("No flags found in project %s", config.LdProject)

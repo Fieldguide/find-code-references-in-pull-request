@@ -59,11 +59,7 @@ func githubFlagComment(flag ldapi.FeatureFlag, aliases []string, added, extinct 
 		Primary:            flag.Environments[config.LdEnvironment],
 		LDInstance:         config.LdInstance,
 		ExtinctionsEnabled: config.CheckExtinctions,
-		Offline:            config.Offline,
-	}
-	// Offline has no flag metadata or LaunchDarkly link; show the key as the name.
-	if config.Offline {
-		commentTemplate.FlagName = flag.Key
+		Offline:            config.IsOffline(),
 	}
 	if flag.ArchivedDate != nil {
 		commentTemplate.ArchivedAt = time.UnixMilli(*flag.ArchivedDate)
@@ -73,7 +69,7 @@ func githubFlagComment(flag ldapi.FeatureFlag, aliases []string, added, extinct 
 	}
 
 	// All whitespace for template is required to be there or it will not render properly nested.
-	tmplSetup := `| {{if .Offline}}{{.FlagName}}{{else}}[{{.FlagName}}]({{.LDInstance}}{{.Primary.Site.Href}}){{end}} | ` +
+	tmplSetup := `| {{if .Offline}}{{.FlagKey}}{{else}}[{{.FlagName}}]({{.LDInstance}}{{.Primary.Site.Href}}){{end}} | ` +
 		"`" + `{{.FlagKey}}` + "` |" +
 		`{{- if ne (len .Aliases) 0}}` +
 		`{{range $i, $e := .Aliases }}` + `{{if $i}},{{end}}` + " `" + `{{$e}}` + "`" + `{{end}}` +
