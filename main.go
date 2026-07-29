@@ -97,26 +97,25 @@ func main() {
 	setOutputs(config, flagsRef)
 
 	// Add comment
-	postedComments := ""
-	if config.SkipComment {
-		gha.Log("Skipping PR comment")
-	} else {
-		gha.StartLogGroup("Processing comment...")
-		existingComment := checkExistingComments(event, config, ctx)
-		buildComment := ghc.ProcessFlags(flagsRef, flags, config)
-		postedComments = ghc.BuildFlagComment(buildComment, flagsRef, existingComment)
-		if postedComments != "" {
-			comment := github.IssueComment{
-				Body: &postedComments,
-			}
+	gha.StartLogGroup("Processing comment...")
+	existingComment := checkExistingComments(event, config, ctx)
+	buildComment := ghc.ProcessFlags(flagsRef, flags, config)
+	postedComments := ghc.BuildFlagComment(buildComment, flagsRef, existingComment)
+	if postedComments != "" {
+		comment := github.IssueComment{
+			Body: &postedComments,
+		}
+		if config.SkipComment {
+			gha.Log("Skipping PR comment")
+		} else {
+
 			err = postGithubComment(ctx, flagsRef, config, existingComment, *event.PullRequest.Number, comment)
 		}
-		gha.EndLogGroup()
 	}
+	gha.EndLogGroup()
 
 	// Add flag links
 	if config.CreateFlagLinks && postedComments != "" {
-		// if postedComments is empty, we probably already created the flag links
 		gha.StartLogGroup("Adding flag links...")
 		ldclient.CreateFlagLinks(config, flagsRef, event)
 		gha.EndLogGroup()
