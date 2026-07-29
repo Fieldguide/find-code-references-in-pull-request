@@ -97,29 +97,25 @@ func main() {
 	setOutputs(config, flagsRef)
 
 	// Add comment
-	postedComments := ""
-	if config.SkipComment {
-		gha.Log("Skipping PR comment")
-	} else {
-		gha.StartLogGroup("Processing comment...")
-		existingComment := checkExistingComments(event, config, ctx)
-		buildComment := ghc.ProcessFlags(flagsRef, flags, config)
-		postedComments = ghc.BuildFlagComment(buildComment, flagsRef, existingComment)
-		if postedComments != "" {
-			comment := github.IssueComment{
-				Body: &postedComments,
-			}
+	gha.StartLogGroup("Processing comment...")
+	existingComment := checkExistingComments(event, config, ctx)
+	buildComment := ghc.ProcessFlags(flagsRef, flags, config)
+	postedComments := ghc.BuildFlagComment(buildComment, flagsRef, existingComment)
+	if postedComments != "" {
+		comment := github.IssueComment{
+			Body: &postedComments,
+		}
+		if config.SkipComment {
+			gha.Log("Skipping PR comment")
+		} else {
+
 			err = postGithubComment(ctx, flagsRef, config, existingComment, *event.PullRequest.Number, comment)
 		}
-		gha.EndLogGroup()
 	}
+	gha.EndLogGroup()
 
 	// Add flag links
-	// Independent of comment posting: the LD flag-links API is idempotent
-	// (a duplicate POST for the same PR+flag returns 409 and is logged, not treated
-	// as an error), so it's safe to call this on every run that found flags,
-	// including skip-comment runs where postedComments is never set.
-	if config.CreateFlagLinks && flagsRef.AnyFound() {
+	if config.CreateFlagLinks && postedComments != "" {
 		gha.StartLogGroup("Adding flag links...")
 		ldclient.CreateFlagLinks(config, flagsRef, event)
 		gha.EndLogGroup()
