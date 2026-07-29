@@ -115,8 +115,11 @@ func main() {
 	}
 
 	// Add flag links
-	if config.CreateFlagLinks && postedComments != "" {
-		// if postedComments is empty, we probably already created the flag links
+	// Independent of comment posting: the LD flag-links API is idempotent
+	// (a duplicate POST for the same PR+flag returns 409 and is logged, not treated
+	// as an error), so it's safe to call this on every run that found flags,
+	// including skip-comment runs where postedComments is never set.
+	if config.CreateFlagLinks && flagsRef.AnyFound() {
 		gha.StartLogGroup("Adding flag links...")
 		ldclient.CreateFlagLinks(config, flagsRef, event)
 		gha.EndLogGroup()
