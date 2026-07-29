@@ -70,6 +70,9 @@ jobs:
       
 
   e2e-tests:
+    # Disabled: requires LD_ACCESS_TOKEN_WRITER, which isn't currently accessible to this repo.
+    # Re-enable once org secret access is confirmed.
+    if: false
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
