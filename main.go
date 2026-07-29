@@ -96,11 +96,6 @@ func main() {
 	// Set outputs
 	setOutputs(config, flagsRef)
 
-	if config.SkipComment {
-		gha.Log("Skipping PR comment (`skip-comment` is true)")
-		return
-	}
-
 	// Add comment
 	gha.StartLogGroup("Processing comment...")
 	existingComment := checkExistingComments(event, config, ctx)
@@ -110,8 +105,11 @@ func main() {
 		comment := github.IssueComment{
 			Body: &postedComments,
 		}
-
-		err = postGithubComment(ctx, flagsRef, config, existingComment, *event.PullRequest.Number, comment)
+		if (config.SkipComment) {
+			gha.Log("Skipping PR comment (`skip-comment` is true)")
+		} else {
+			err = postGithubComment(ctx, flagsRef, config, existingComment, *event.PullRequest.Number, comment)
+		}
 	}
 	gha.EndLogGroup()
 
