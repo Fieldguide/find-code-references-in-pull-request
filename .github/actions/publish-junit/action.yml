@@ -21,7 +21,7 @@ runs:
   steps:
     - name: Report Tests to Datadog
       shell: bash
-      if: ${{ inputs.datadog }} == 'true'
+      if: ${{ inputs.datadog }} == 'true' && env.DD_API_KEY != ''
       run: datadog-ci junit upload --service ${{ inputs.name }} ${{ inputs.files }}
 
     - name: Test Publish
